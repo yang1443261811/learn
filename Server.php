@@ -1,5 +1,6 @@
 <?php
 header('Content-Type:text/html;charset=utf-8');
+require_once './Utils.php';
 
 class Server
 {
@@ -101,49 +102,20 @@ class Server
             } else {
                 $buffer = '';
                 socket_recv($socket, $buffer, 2048, 0);
-                if (static::$sockets[(int)$socket]['handshake']) {
-                    $data = $this->parse($buffer);
-                    $this->onMessage($socket, $data);
+                $client_id = static::getClientId($socket);
+                if (static::$sockets[$client_id]['handshake']) {
+                    $data = Utils::decode($buffer);
+                    //执行事件回调
+                    $this->events->onMessage($client_id, $data);
                 } else {
                     $this->handshake($socket, $buffer);
-                    $this->onConnect($socket);
+                    //设置握手的状态
+                    static::$sockets[$client_id]['handshake'] = true;
+                    //执行事件回调
+                    $this->events->onConnect($client_id);
                 }
             }
         }
-    }
-
-    /**
-     * 链接成功时的处理
-     *
-     * @param object $socket
-     */
-    public function onConnect($socket)
-    {
-        $client_id = (int)$socket;
-        $this->events->onConnect($client_id);
-    }
-
-    /**
-     * 关闭链接时的处理
-     *
-     * @param object $socket
-     */
-    public function onClose($socket)
-    {
-        $client_id = (int)$socket;
-        $this->events->onClose($client_id);
-    }
-
-    /**
-     * 来消息了的处理
-     *
-     * @param object $socket
-     * @param array $data
-     */
-    public function onMessage($socket, $data)
-    {
-        $client_id = (int)$socket;
-        $this->events->onMessage($client_id, $data);
     }
 
     /**
@@ -155,7 +127,7 @@ class Server
     public static function sendToClient($client_id, $data)
     {
         $socket = static::$sockets[$client_id]['resource'];
-        $content = static::frame($data);
+        $content = Utils::encode($data);
 
         socket_write($socket, $content, strlen($content));
     }
@@ -181,7 +153,7 @@ class Server
     {
         $client_id = static::$users[$uid];
         $socket = static::$sockets[$client_id]['resource'];
-        $content = static::frame($data);
+        $content = Utils::encode($data);
 
         socket_write($socket, $content, strlen($content));
     }
@@ -193,7 +165,7 @@ class Server
      */
     public static function broadcast($data)
     {
-        $content = static::frame($data);
+        $content = Utils::encode($data);
         foreach (static::$sockets as $socket) {
             if ($socket['resource'] != static::$master) {
                 socket_write($socket['resource'], $content, strlen($content));
@@ -206,17 +178,31 @@ class Server
      *
      * @param object $socket
      */
-    public function connect($socket)
+    protected function connect($socket)
     {
-        socket_getpeername($socket, $ip, $port);
+        $client_id = static::getClientId($socket);
         $socket_info = [
-            'resource'  => $socket,
             'handshake' => false,
-            'ip'        => $ip,
-            'port'      => $port,
+            'resource'  => $socket,
+            'client_id' => $client_id,
         ];
 
-        static::$sockets[(int)$socket] = $socket_info;
+        static::$sockets[$client_id] = $socket_info;
+    }
+
+    /**
+     * 获取客户端ID
+     *
+     * @param object $socket
+     * @return string
+     */
+    public static function getClientId($socket)
+    {
+        socket_getpeername($socket, $ip, $port);
+        $connect_id = (int)$socket;
+        $client_id = Utils::addressToClientId($ip, $port, $connect_id);
+
+        return $client_id;
     }
 
     /**
@@ -226,7 +212,7 @@ class Server
      * @param string $buffer
      * @return bool
      */
-    public function handshake($socket, $buffer)
+    protected function handshake($socket, $buffer)
     {
         //对接收到的buffer处理,并回馈握手！！
         $buf = substr($buffer, strpos($buffer, 'Sec-WebSocket-Key:') + 18);
@@ -239,10 +225,8 @@ class Server
         $response .= "Sec-WebSocket-Accept: " . $hash . "\r\n\r\n";
         //回馈握手
         socket_write($socket, $response, strlen($response));
-        //设置握手的状态
-        static::$sockets[(int)$socket]['handshake'] = true;
         //向客户端发送握手成功消息
-        $msg = static::frame(json_encode([
+        $msg = Utils::encode(json_encode([
             'content' => 'done',
             'type'    => 'handshake',
         ]));
@@ -251,65 +235,6 @@ class Server
         return true;
     }
 
-    /**
-     * 将普通信息组装成websocket数据帧
-     *
-     * @param string $msg
-     * @return string
-     */
-    private static function frame($msg)
-    {
-        $frame = [];
-        $frame[0] = '81';
-        $len = strlen($msg);
-        if ($len < 126) {
-            $frame[1] = $len < 16 ? '0' . dechex($len) : dechex($len);
-        } else if ($len < 65025) {
-            $s = dechex($len);
-            $frame[1] = '7e' . str_repeat('0', 4 - strlen($s)) . $s;
-        } else {
-            $s = dechex($len);
-            $frame[1] = '7f' . str_repeat('0', 16 - strlen($s)) . $s;
-        }
-
-        $data = '';
-        $l = strlen($msg);
-        for ($i = 0; $i < $l; $i++) {
-            $data .= dechex(ord($msg{$i}));
-        }
-
-        $frame[2] = $data;
-        $data = implode('', $frame);
-
-        return pack("H*", $data);
-    }
-
-    /**
-     * 解析websocket数据帧
-     *
-     * @param string $buffer
-     * @return bool|string
-     */
-    private function parse($buffer)
-    {
-        $decoded = '';
-        $len = ord($buffer[1]) & 127;
-        if ($len === 126) {
-            $masks = substr($buffer, 4, 4);
-            $data = substr($buffer, 8);
-        } else if ($len === 127) {
-            $masks = substr($buffer, 10, 4);
-            $data = substr($buffer, 14);
-        } else {
-            $masks = substr($buffer, 2, 4);
-            $data = substr($buffer, 6);
-        }
-        for ($index = 0; $index < strlen($data); $index++) {
-            $decoded .= $data[$index] ^ $masks[$index % 4];
-        }
-
-        return json_decode($decoded, true);
-    }
 
     /**
      * 设置事件处理对象
