@@ -15,7 +15,7 @@ class Timer
     public function signalHandle()
     {
         \pcntl_alarm(1);
-        echo 123;
+        echo 123234;
     }
 }
 
