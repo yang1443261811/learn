@@ -103,6 +103,7 @@ class Server
                 $buffer = '';
                 socket_recv($socket, $buffer, 2048, 0);
                 $client_id = static::getClientId($socket);
+                //如果没有握手,进行握手
                 if (static::$sockets[$client_id]['handshake']) {
                     $data = Utils::decode($buffer);
                     //执行事件回调
@@ -188,6 +189,7 @@ class Server
         ];
 
         static::$sockets[$client_id] = $socket_info;
+        print_r(static::$sockets);
     }
 
     /**
@@ -248,6 +250,10 @@ class Server
 
 }
 
+//$address = Utils::clientIdToAddress('0000007fddda00000007');
+//$address2 = Utils::clientIdToAddress('0000007fdde600000008');
+//print_r($address);
+//print_r($address2);
 require_once './Event.php';
 $server = new Server();
 $server->setEvents(new Event());
