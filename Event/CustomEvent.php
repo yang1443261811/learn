@@ -40,7 +40,7 @@ class CustomEvent implements EventInterface
         }, [$callback, $resource]);
 
         $event->add();
-        print_r($event);
+        echo get_class($event).'\r\n';
     }
 
     /**
