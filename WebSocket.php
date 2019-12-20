@@ -1,7 +1,7 @@
 <?php
 require_once './Utils.php';
 require_once './Event/Select.php';
-require_once './Event/Event.php';
+require_once './Event/CustomEvent.php';
 require_once './Event/EventInterface.php';
 
 
@@ -92,7 +92,7 @@ class WebSocket
     public function getEventPollClass($type = null)
     {
         if ($type == 'event') {
-            $instance = new Event();
+            $instance = new CustomEvent();
         } else {
             $instance = new Select();
         }

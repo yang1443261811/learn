@@ -1,8 +1,8 @@
 <?php
 
-namespace Socket\Event;
+require_once 'EventInterface.php';
 
-class Event implements EventInterface
+class CustomEvent implements EventInterface
 {
     // 读资源列表
     public $readResources = [];
