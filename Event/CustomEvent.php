@@ -65,6 +65,7 @@ class CustomEvent implements EventInterface
      */
     public function loop()
     {
+        echo 'loop';
         $this->eventBase->loop();
     }
 }
