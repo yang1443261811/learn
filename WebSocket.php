@@ -62,7 +62,7 @@ class WebSocket
     {
         $this->port = $port;
         $this->host = $host;
-        static::$globalEvent = $this->getEventPollClass();
+        static::$globalEvent = $this->getEventPollClass('event');
     }
 
     public function run()
