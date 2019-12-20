@@ -1,6 +1,7 @@
 <?php
 require_once './Utils.php';
 require_once './Event/Select.php';
+require_once './Event/Event.php';
 require_once './Event/EventInterface.php';
 
 
