@@ -76,7 +76,6 @@ class Select implements EventInterface
             foreach ($read as $connect) {
                 $id = (int)$connect;
                 list($callback, $args) = $this->readEventQueue[$id];
-                print_r($args);
                 call_user_func($callback, $connect);
             }
         }

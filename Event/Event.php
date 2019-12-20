@@ -4,28 +4,23 @@ namespace Socket\Event;
 
 class Event implements EventInterface
 {
-    /**
-     * 保存所有读事件
-     *
-     * @var array
-     */
-    public $readQueue = [];
+    // 读资源列表
+    public $readResources = [];
+    // 写资源列表
+    public $writeResources = [];
+    // 读事件列表
+    public $readEventQueue = [];
+    // 写事件列表
+    public $writeEventQueue = [];
+    // 事件核心
+    public $eventBase;
+    // 事件实例
+    public $eventInstance;
 
-    /**
-     * 保存所有写事件
-     *
-     * @var array
-     */
-    public $writeQueue = [];
-
-    /**
-     * 初始化
-     *
-     * EventInterface constructor.
-     */
+    // 初始化
     public function __construct()
     {
-
+        $this->eventBase = new EventBase();
     }
 
     /**
@@ -39,7 +34,11 @@ class Event implements EventInterface
      */
     public function add($callback, array $args, $resource, $type)
     {
+        $event = new Event($this->eventBase, $resource, Event::READ | Event::PERSIST, function ($parameters) {
+            call_user_func($parameters[0], $parameters[1]);
+        }, [$callback, $resource]);
 
+        $event->add();
     }
 
     /**
@@ -66,6 +65,6 @@ class Event implements EventInterface
      */
     public function loop()
     {
-
+        $this->eventBase->loop();
     }
 }
