@@ -56,7 +56,9 @@ $event = new  Event($base, $socket, Event::PERSIST | Event::READ | Event::WRITE,
 $event->add(); //加入事件监听
 var_dump($base->loop()); //调度挂起事件监听
 
+function p(&$a) {
 
+}
 
 
 

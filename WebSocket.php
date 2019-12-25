@@ -107,6 +107,7 @@ class WebSocket
      */
     public function connect($socket)
     {
+        echo 'call---->';
         //接收一个链接
         if (($connect = socket_accept($socket)) == false) {
             return;
