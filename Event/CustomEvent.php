@@ -14,8 +14,6 @@ class CustomEvent implements EventInterface
     public $writeEventQueue = [];
     // 事件核心
     public $eventBase;
-    // 事件实例
-    public $eventInstance;
 
     // 初始化
     public function __construct()
@@ -34,13 +32,14 @@ class CustomEvent implements EventInterface
      */
     public function add($callback, array $args, $resource, $type)
     {
-        $event = new Event($this->eventBase, $resource, Event::READ | Event::PERSIST, function ($parameters) {
+        $eventBase = new EventBase();
+        $event = new Event($eventBase, $resource, Event::READ | Event::PERSIST, function ($parameters) {
             print_r($parameters);
             call_user_func($parameters[0], $parameters[1]);
         }, [$callback, $resource]);
 
         $event->add();
-        echo get_class($event).'\r\n';
+        $eventBase->loop();
     }
 
     /**
@@ -67,7 +66,7 @@ class CustomEvent implements EventInterface
      */
     public function loop()
     {
-        echo 'loop';
-        $this->eventBase->loop();
+//        echo 'loop';
+//        $this->eventBase->loop();
     }
 }
