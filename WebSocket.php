@@ -128,7 +128,6 @@ class WebSocket
 
     public function reader($connect)
     {
-        echo 'reader\n';
         $buffer = '';
         socket_recv($connect, $buffer, 2048, 0);
         $id = (int)$connect;
@@ -137,6 +136,8 @@ class WebSocket
             //执行事件回调
             if (is_callable($this->callbackMessage)) {
                 call_user_func($this->callbackMessage, $data);
+                $content = Utils::encode('hello world');
+                socket_write($connect, $content, strlen($content));
             }
         } else {
             $this->handshake($connect, $buffer);
