@@ -133,11 +133,11 @@ class WebSocket
         $id = (int)$connect;
         if ($this->sockets[$id]['handshake']) {
             $data = Utils::decode($buffer);
+            $content = Utils::encode('hello world');
+            socket_write($connect, $content, strlen($content));
             //执行事件回调
             if (is_callable($this->callbackMessage)) {
                 call_user_func($this->callbackMessage, $data);
-                $content = Utils::encode('hello world');
-                socket_write($connect, $content, strlen($content));
             }
         } else {
             $this->handshake($connect, $buffer);
