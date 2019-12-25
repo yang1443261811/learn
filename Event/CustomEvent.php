@@ -34,8 +34,7 @@ class CustomEvent implements EventInterface
     {
         $eventBase = new EventBase();
         $event = new Event($eventBase, $resource, Event::READ | Event::PERSIST, function ($fd, $events, $callback) {
-            print_r($callback);
-//            call_user_func($parameters[0], $parameters[1]);
+            call_user_func($callback, $fd);
         }, $callback);
 
         $event->add();
