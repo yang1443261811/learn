@@ -128,6 +128,10 @@ class WebSocket
 
     public function reader($connect)
     {
+        if (!$connect) {
+            echo $connect;
+            die('无效的socket实例');
+        }
         $buffer = '';
         socket_recv($connect, $buffer, 2048, 0);
         $id = (int)$connect;
