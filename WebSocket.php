@@ -111,7 +111,9 @@ class WebSocket
         if (($connect = socket_accept($socket)) == false) {
             return;
         }
-
+        
+        // 将连接socket也设置为非阻塞模式
+        socket_set_nonblock($connect);
         $this->sockets[(int)$connect] = [
             'handshake' => false,
             'resource'  => $connect,
