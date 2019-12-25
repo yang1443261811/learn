@@ -109,21 +109,21 @@ class WebSocket
     {
         echo 'call---->';
         //接收一个链接
-        if (($connect = socket_accept($socket)) == false) {
+        if (($connection = socket_accept($socket)) == false) {
             return;
         }
 
         // 将连接socket也设置为非阻塞模式
-        socket_set_nonblock($connect);
-        $this->sockets[(int)$connect] = [
+        socket_set_nonblock($connection);
+        $this->sockets[(int)$connection] = [
             'handshake' => false,
-            'resource'  => $connect,
+            'resource'  => $connection,
         ];
         print_r($this->sockets);
-        static::$globalEvent->add([$this, 'reader'], array('reader'), $connect, EventInterface::EVENT_TYPE_READ);
+        static::$globalEvent->add([$this, 'reader'], array('reader'), $connection, EventInterface::EVENT_TYPE_READ);
 
         if (is_callable($this->callbackConnect)) {
-            call_user_func($this->callbackConnect, $socket);
+            call_user_func($this->callbackConnect, $connection);
         }
     }
 

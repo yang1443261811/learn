@@ -32,14 +32,9 @@ class CustomEvent implements EventInterface
      */
     public function add($callback, array $args, $resource, $type)
     {
-//        global $eventBase;
-//        $eventBase = new EventBase();
-        $event = new Event($this->eventBase, $resource, Event::READ | Event::PERSIST, function ($fd, $events, $callback) {
-            call_user_func($callback, $fd);
-        }, $callback);
+        $event = new Event($this->eventBase, $resource, Event::READ | Event::PERSIST, $callback, $resource);
 
         $event->add();
-//        $eventBase->loop();
     }
 
     /**
