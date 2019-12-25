@@ -118,7 +118,7 @@ class WebSocket
             'handshake' => false,
             'resource'  => $connect,
         ];
-
+        print_r($this->sockets);
         static::$globalEvent->add([$this, 'reader'], array('reader'), $connect, EventInterface::EVENT_TYPE_READ);
 
         if (is_callable($this->callbackConnect)) {
