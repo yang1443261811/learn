@@ -139,20 +139,17 @@ class WebSocket
      */
     public function reader($connect)
     {
-        $buffer = socket_read($connect, 8024);
+        $bytes = @socket_recv($connect, $buffer, 2048, 0);
         $connectId = $this->getClientId($connect);
-        if (strlen($buffer) < 9) {
-//            echo $buffer;
-//            return;
-//            $this->close($connectId);
-//            return;
+        if ($bytes < 9) {
+            $this->close($connectId);
+            return;
         }
 
         if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
-            print_r($data);
-//            $content = Utils::encode(json_encode($data));
-//            socket_write($connect, $content, strlen($content));
+            $content = Utils::encode(json_encode($data));
+            socket_write($connect, $content, strlen($content));
             //执行事件回调
             if (is_callable($this->onMessage)) {
                 call_user_func($this->onMessage, $data);
