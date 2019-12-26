@@ -82,6 +82,7 @@ class Connection
         //接收到的数据为空关闭连接
         if (!$len) {
             $this->destroy();
+            die;
             return;
         }
 
