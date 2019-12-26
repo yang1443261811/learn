@@ -135,12 +135,16 @@ class WebSocket
     {
         $bytes = @socket_recv($connect, $buffer, 2048, 0);
         $connectId = $this->getClientId($connect);
-//        if ($bytes < 9) {
+        if ($bytes < 9) {
 //            $this->close($connectId);
-//            echo 'handshake: ' . $this->sockets[$connectId]['handshake'] . '-------------';
-//            echo '-----disconnect----';
-//            return;
-//        }
+            if (array_key_exists($connectId, $this->sockets)) {
+                echo 'handshake: ' . $this->sockets[$connectId]['handshake'] . '-----';
+            } else {
+                echo '---bad socket---';
+            }
+            echo '---disconnect---';
+            return;
+        }
 
         if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
