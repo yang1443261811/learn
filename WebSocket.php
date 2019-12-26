@@ -145,7 +145,7 @@ class WebSocket
             return;
         }
 
-        if ($this->sockets[$connectId]['handshake'] == 0) {
+        if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
