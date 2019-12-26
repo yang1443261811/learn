@@ -116,11 +116,7 @@ class WebSocket
         socket_set_nonblock($connection);
         //获取连接ID
         $connect_id = $this->getClientId($connection);
-        if (isset($this->sockets[$connect_id])) {
-            echo 'already exist';
-            print_r($this->sockets[$connect_id]);
-            die;
-        }
+
         $this->sockets[$connect_id] = [
             'handshake' => 0,
             'resource'  => $connection,
@@ -143,6 +139,7 @@ class WebSocket
         $connectId = $this->getClientId($connect);
         if ($bytes < 9) {
             $this->close($connectId);
+            echo 'handshake: ' . $this->sockets[$connectId]['handshake'] . '-------------';
             echo '-----disconnect----';
             return;
         }
