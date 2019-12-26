@@ -38,9 +38,10 @@ class CustomEvent implements EventInterface
      * @param $resource resource|int 读写事件中表示socket资源,定时器任务中表示时间(int,秒),信号回调中表示信号(int)
      * @param $type int 类型
      */
-    public function delOne($resource, $type)
+    public function del($resource, $type = null)
     {
-
+        $key = (int)$resource;
+        unset($this->allEvents[$key]);
     }
 
     /**

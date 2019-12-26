@@ -142,6 +142,7 @@ class WebSocket
         if (!$bytes) {
             socket_close($connect);
             unset($this->sockets[$connectId]);
+            static::$globalEvent->del($connect);
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
             $this->error(['error_init_server', $err_code, $err_msg]);
