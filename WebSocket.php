@@ -1,8 +1,8 @@
 <?php
 require_once './Utils.php';
+require_once './Connection.php';
 require_once './Event/Select.php';
 require_once './Event/CustomEvent.php';
-require_once './Event/Connection.php';
 require_once './Event/EventInterface.php';
 
 
