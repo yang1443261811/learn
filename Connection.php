@@ -26,6 +26,20 @@ class Connection
     public $handshake;
 
     /**
+     * 接收到数据时的回调
+     *
+     * @var callback
+     */
+    public $onMessage;
+
+    /**
+     * 连接的ID
+     *
+     * @var string
+     */
+    public $clientId;
+
+    /**
      * Connection constructor.
      * @param object $socket
      * @param EventInterface $event
@@ -33,12 +47,14 @@ class Connection
     public function __construct($socket, EventInterface $event)
     {
         $this->_socket = $socket;
-        //设置socket为非阻塞
-        socket_set_nonblock($this->_socket);
+        //生成ID
+        $this->clientId = $this->getClientId();
         //事件处理类
         $this->_event = $event;
+        //设置socket为非阻塞
+        socket_set_nonblock($this->_socket);
         //添加事件监听
-        $this->_event->add($this->_socket, array($this, 'reader'), EventInterface::EVENT_TYPE_READ);
+        $this->_event->add($this->_socket, array($this, 'read'), EventInterface::EVENT_TYPE_READ);
     }
 
     /**
@@ -58,27 +74,58 @@ class Connection
      * 读取客户端的数据
      *
      * @param object $socket
+     * @return void
      */
-    public function reader($socket)
+    public function read($socket)
     {
-        $bytes = @socket_recv($socket, $buffer, 2048, 0);
-        if (!$bytes) {
+        $len = @socket_recv($socket, $buffer, 2048, 0);
+        //接收到的数据为空关闭连接
+        if (!$len) {
             $this->destroy();
-        } else {
-            //是否握手
-            if ($this->handshake == 0) {
-                $this->handshake($buffer);
-                $this->handshake = 1;
-            } else {
-                $data = Utils::decode($buffer);
-                $content = Utils::encode(json_encode($data));
-                socket_write($socket, $content, strlen($content));
-                //执行事件回调
-//                if (is_callable($this->onMessage)) {
-//                    call_user_func($this->onMessage, $data);
-//                }
-            }
+            return;
         }
+
+        //进行握手
+        if ($this->handshake == 0) {
+            $this->handshake($buffer);
+            $this->handshake = 1;
+            //向客户端发送握手成功消息
+            $this->send(['content' => 'done', 'type' => 'handshake',]);
+            return;
+        }
+
+        //接收客户端发送的数据并执行回调
+        $data = Utils::decode($buffer);
+        if (is_callable($this->onMessage)) {
+            call_user_func($this->onMessage, $this->clientId, $data);
+        }
+    }
+
+    /**
+     * 发送数据到当前连接
+     *
+     * @param array $data
+     */
+    public function send(array $data)
+    {
+        $content = Utils::encode(json_encode($data));
+
+        socket_write($this->_socket, $content, strlen($content));
+    }
+
+    /**
+     * 获取客户端ID
+     *
+     * @param object $socket
+     * @return string
+     */
+    public function getClientId()
+    {
+        socket_getpeername($this->_socket, $ip, $port);
+        $connect_id = (int)$this->_socket;
+        $client_id = Utils::addressToClientId($ip, $port, $connect_id);
+
+        return $client_id;
     }
 
     /**
@@ -100,12 +147,6 @@ class Connection
         $response .= "Sec-WebSocket-Accept: " . $hash . "\r\n\r\n";
         //回馈握手
         socket_write($this->_socket, $response, strlen($response));
-        //向客户端发送握手成功消息
-        $msg = Utils::encode(json_encode([
-            'content' => 'done',
-            'type'    => 'handshake',
-        ]));
-        socket_write($this->_socket, $msg, strlen($msg));
 
         return true;
     }

@@ -93,7 +93,7 @@ class WebSocket
         //将服务器设置为非阻塞
         socket_set_nonblock($this->master);
 
-        static::$globalEvent->add($this->master, [$this, 'connect'],  EventInterface::EVENT_TYPE_READ);
+        static::$globalEvent->add($this->master, [$this, 'connect'], EventInterface::EVENT_TYPE_READ);
 
         static::$globalEvent->loop();
     }
@@ -118,34 +118,25 @@ class WebSocket
     {
         //接收一个链接
         $connection = socket_accept($socket);
-        if (!$connection) {
+        if ($connection) {
+            //获取连接ID
+            $connect_id = $this->getClientId($connection);
+            //初始化新的连接
+            $newConnection = new Connection($connection, static::$globalEvent);
+            $newConnection->onMessage = array($this, 'onMessage');
+            $this->_clientConnections[$newConnection->clientId] = $newConnection;
+        } else {
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
-            $this->error(['error_init_server', $err_code, $err_msg]);
-            return;
+            $this->error(['error', $err_code, $err_msg]);
         }
-
-        //获取连接ID
-        $connect_id = $this->getClientId($connection);
-
-        $this->_clientConnections[$connect_id] = new Connection($connection, static::$globalEvent);
     }
 
-
-    /**
-     * 获取客户端ID
-     *
-     * @param object $socket
-     * @return string
-     */
-    public function getClientId($socket)
+    public function onMessage($client_id, $data)
     {
-        socket_getpeername($socket, $ip, $port);
-        $connect_id = (int)$socket;
-        $client_id = Utils::addressToClientId($ip, $port, $connect_id);
-
-        return $client_id;
+        $this->_clientConnections[$client_id]->send($data);
     }
+
 
     /**
      * 记录debug信息
