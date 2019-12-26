@@ -4,21 +4,14 @@ require_once 'EventInterface.php';
 
 class CustomEvent implements EventInterface
 {
-    // 读资源列表
-    public $readResources = [];
-    // 写资源列表
-    public $writeResources = [];
-    // 读事件列表
-    public $readEventQueue = [];
-    // 写事件列表
-    public $writeEventQueue = [];
+    public $allEvents = array();
     // 事件核心
     public $eventBase;
 
     // 初始化
     public function __construct()
     {
-        $this->eventBase = new EventBase();
+        $this->eventBase = new \EventBase();
     }
 
     /**
@@ -32,7 +25,9 @@ class CustomEvent implements EventInterface
      */
     public function add($callback, array $args, $resource, $type)
     {
-        $event = new Event($this->eventBase, $resource, Event::READ | Event::PERSIST, $callback, $resource);
+        $event = new \Event($this->eventBase, $resource, Event::READ | Event::PERSIST, $callback, $resource);
+        $key = (int)$resource;
+        $this->allEvents[$key] = $event;
 
         $event->add();
     }
@@ -61,7 +56,6 @@ class CustomEvent implements EventInterface
      */
     public function loop()
     {
-//        echo 'loop';
         $this->eventBase->loop();
     }
 }

@@ -1,65 +1,54 @@
 <?php
 
+class EventLib
+{
+    public $_allEvents = array();
 
-//连接重用
-//创建资源流的上下文
-$context = stream_context_create([
-    'socket' => [
-        'backlog' => 2000
-    ]]);
-stream_context_set_option($context, 'socket', 'so_reuseaddr', 1); //设置连接重用
-//sock_set_option($this->server, SOL_SOCKET, SO_REUSEADDR, 1); //复用还处于 TIME_WAIT
-$socket = stream_socket_server("tcp://0.0.0.0:8090", $errno, $errstr, STREAM_SERVER_BIND | STREAM_SERVER_LISTEN, $context);
-stream_set_blocking($socket, false);//非阻塞
-//绑定事件
-$base = new EventBase();
-//监听服务端的socket
-$event = new  Event($base, $socket, Event::PERSIST | Event::READ | Event::WRITE, function ($socket) use (&$base) {
+    public $eventBase;
 
-    $client = stream_socket_accept($socket);
+    public function __construct()
+    {
+        $this->eventBase = new EventBase();
+    }
 
-    //global $base;
+    public function add($fd, $func, $args = array())
+    {
+        $fd_key = (int)$fd;
+        $event = new \Event($this->eventBase, $fd, \Event::READ | \Event::PERSIST, $func, $fd);
+        if (!$event || !$event->add()) {
+            return false;
+        }
+        $this->_allEvents[$fd_key] = $event;
+        return true;
+    }
 
-    //var_dump($socket,$client);
-
-    $base = new EventBase();
-    //监听客户端socket
-    $event = new  Event($base, $client, Event::PERSIST | Event::READ | Event::WRITE, function ($client) {
-        $msg = fread($client, 65535);
-//
-//         if($msg){ //匹配请求头包含了keep-alive
-//
-//         }
-
-        $content = '21335435';
-        $string = "HTTP/1.1 200 OK\r\n";
-        $string .= "Content-Type: text/html;charset=utf-8\r\n";
-        $string .= "Connection: keep-alive\r\n";
-        $string .= "Content-Length: " . strlen($content) . "\r\n\r\n";
-        fwrite($client, $string . $content);
-
-        //fclose($client);
-
-
-        //当socket断开连接，删除事件
-
-        //$event->del();//删除事件
-
-
-    });
-    $event->add(); //加入事件监听
-    $base->loop();
-
-    //监视客户端
-    //$event->del();//删除事件
-});
-$event->add(); //加入事件监听
-var_dump($base->loop()); //调度挂起事件监听
-
-function p(&$a) {
-
+    public function loop()
+    {
+        $this->eventBase->loop();
+    }
 }
 
 
+$host = '0.0.0.0';
+$port = 9999;
+$listen_socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 
+socket_bind($listen_socket, $host, $port);
 
+socket_listen($listen_socket);
+
+echo PHP_EOL . PHP_EOL . "Http Server ON : http://{$host}:{$port}" . PHP_EOL;
+
+socket_set_nonblock($listen_socket);
+
+$eventLib = new EventLib();
+$eventLib->add($listen_socket, function ($listen_socket) {
+    if (($connect_socket = socket_accept($listen_socket)) != false) {
+        echo "有新的客户端：" . intval($connect_socket) . PHP_EOL;
+        $msg = "HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nHi";
+        socket_write($connect_socket, $msg, strlen($msg));
+        socket_close($connect_socket);
+    }
+}, $listen_socket);
+
+$eventLib->loop();
