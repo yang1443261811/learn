@@ -1,5 +1,5 @@
 <?php
-require_once 'EventInterface.php';
+require_once './Event/EventInterface.php';
 require_once 'Utils.php';
 
 class Connection
