@@ -79,8 +79,6 @@ class WebSocket
         //开始监听
         socket_listen($this->master);
 
-        $this->sockets[0] = ['resource' => $this->master];
-
         //将服务器设置为非阻塞
         socket_set_nonblock($this->master);
 
@@ -137,12 +135,12 @@ class WebSocket
     {
         $bytes = @socket_recv($connect, $buffer, 2048, 0);
         $connectId = $this->getClientId($connect);
-        if ($bytes < 9) {
-            $this->close($connectId);
-            echo 'handshake: ' . $this->sockets[$connectId]['handshake'] . '-------------';
-            echo '-----disconnect----';
-            return;
-        }
+//        if ($bytes < 9) {
+//            $this->close($connectId);
+//            echo 'handshake: ' . $this->sockets[$connectId]['handshake'] . '-------------';
+//            echo '-----disconnect----';
+//            return;
+//        }
 
         if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
