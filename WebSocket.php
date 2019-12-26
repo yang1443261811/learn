@@ -141,16 +141,17 @@ class WebSocket
         $buffer = socket_read($connect, 8024);
         $connectId = $this->getClientId($connect);
         if (strlen($buffer) < 9) {
-            echo $buffer;
-            return;
+//            echo $buffer;
+//            return;
 //            $this->close($connectId);
 //            return;
         }
 
         if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
-            $content = Utils::encode(json_encode($data));
-            socket_write($connect, $content, strlen($content));
+            echo $data;
+//            $content = Utils::encode(json_encode($data));
+//            socket_write($connect, $content, strlen($content));
             //执行事件回调
             if (is_callable($this->onMessage)) {
                 call_user_func($this->onMessage, $data);
