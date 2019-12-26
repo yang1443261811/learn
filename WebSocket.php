@@ -114,7 +114,9 @@ class WebSocket
 
         // 将连接socket也设置为非阻塞模式
         socket_set_nonblock($connection);
-        $this->sockets[(int)$connection] = [
+        //获取连接ID
+        $connect_id = $this->getClientId($connection);
+        $this->sockets[$connect_id] = [
             'handshake' => false,
             'resource'  => $connection,
         ];
@@ -133,13 +135,13 @@ class WebSocket
     public function reader($connect)
     {
         $buffer = socket_read($connect, 8024);
-        $key = (int)$connect;
+        $connectId = $this->getClientId($connect);
         if (strlen($buffer) < 9) {
-           $this->close($key);
-           return;
+            $this->close($connectId);
+            return;
         }
 
-        if ($this->sockets[$key]['handshake']) {
+        if ($this->sockets[$connectId]['handshake']) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
@@ -149,7 +151,7 @@ class WebSocket
             }
         } else {
             $this->handshake($connect, $buffer);
-            $this->sockets[$key]['handshake'] = true;
+            $this->sockets[$connectId]['handshake'] = true;
         }
     }
 
@@ -162,6 +164,21 @@ class WebSocket
     {
         socket_close($this->sockets[$key]['resource']);
         unset($this->sockets[$key]);
+    }
+
+    /**
+     * 获取客户端ID
+     *
+     * @param object $socket
+     * @return string
+     */
+    public function getClientId($socket)
+    {
+        socket_getpeername($socket, $ip, $port);
+        $connect_id = (int)$socket;
+        $client_id = Utils::addressToClientId($ip, $port, $connect_id);
+
+        return $client_id;
     }
 
     /**
