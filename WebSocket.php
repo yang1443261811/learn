@@ -143,6 +143,7 @@ class WebSocket
         $connectId = $this->getClientId($connect);
         if ($bytes < 9) {
             $this->close($connectId);
+            echo '-----disconnect----';
             return;
         }
 
