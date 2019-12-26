@@ -62,7 +62,7 @@ class WebSocket
     {
         $this->port = $port;
         $this->host = $host;
-        static::$globalEvent = $this->getEventPollClass();
+        static::$globalEvent = $this->getEventPollClass('event');
     }
 
     public function run()
@@ -141,8 +141,10 @@ class WebSocket
         $buffer = socket_read($connect, 8024);
         $connectId = $this->getClientId($connect);
         if (strlen($buffer) < 9) {
-            $this->close($connectId);
+            echo $buffer;
             return;
+//            $this->close($connectId);
+//            return;
         }
 
         if ($this->sockets[$connectId]['handshake'] == 1) {
