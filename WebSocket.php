@@ -106,7 +106,11 @@ class WebSocket
     public function connect($socket)
     {
         //接收一个链接
-        if (($connection = socket_accept($socket)) == false) {
+        $connection = socket_accept($socket);
+        if (!$connection) {
+            $err_code = socket_last_error();
+            $err_msg = socket_strerror($err_code);
+            $this->error(['error_init_server', $err_code, $err_msg]);
             return;
         }
 
@@ -134,18 +138,14 @@ class WebSocket
     public function reader($connect)
     {
         $bytes = @socket_recv($connect, $buffer, 2048, 0);
-        $connectId = $this->getClientId($connect);
-        if ($bytes < 9) {
-//            $this->close($connectId);
-            if (array_key_exists($connectId, $this->sockets)) {
-                echo 'handshake: ' . $this->sockets[$connectId]['handshake'] . '-----';
-            } else {
-                echo '---bad socket---';
-            }
-            echo '---disconnect---';
-            return;
+        if (!$bytes) {
+            $err_code = socket_last_error();
+            $err_msg = socket_strerror($err_code);
+            $this->error(['error_init_server', $err_code, $err_msg]);
+            die;
         }
 
+        $connectId = $this->getClientId($connect);
         if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
@@ -214,6 +214,19 @@ class WebSocket
         socket_write($socket, $msg, strlen($msg));
 
         return true;
+    }
+
+    /**
+     * 记录debug信息
+     *
+     * @param array $info
+     */
+    private function error(array $info)
+    {
+        $time = date('Y-m-d H:i:s');
+        array_unshift($info, $time);
+        $info = array_map('json_encode', $info);
+        file_put_contents('./websocket_debug.log', implode(' | ', $info) . "\r\n", FILE_APPEND);
     }
 
 }
