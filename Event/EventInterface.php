@@ -23,13 +23,13 @@ interface EventInterface
     /**
      * 添加事件
      *
-     * @param $callback string|array 回调函数
-     * @param $args array 回调函数的参数
      * @param $resource resource|int 读写事件中表示socket资源,定时器任务中表示时间(int,秒),信号回调中表示信号(int)
+     * @param $func string|array 回调函数
      * @param $type int 类型
+     * @param $args array 回调函数的参数
      * @return bool
      */
-    public function add($callback, array $args, $resource, $type);
+    public function add($resource, $func, $type, array $args);
 
     /**
      * 删除指定的事件

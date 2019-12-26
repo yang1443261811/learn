@@ -12,6 +12,7 @@ class Select implements EventInterface
     public $readEventQueue = [];
     // 写事件列表
     public $writeEventQueue = [];
+
     // 初始化
     public function __construct()
     {
@@ -21,23 +22,22 @@ class Select implements EventInterface
     /**
      * 添加事件
      *
-     * @param $callback string|array 回调函数
-     * @param $args array 回调函数的参数
      * @param $resource resource|int 读写事件中表示socket资源,定时器任务中表示时间(int,秒),信号回调中表示信号(int)
+     * @param $func string|array 回调函数
      * @param $type int 类型
-     * @return bool
+     * @param $args array 回调函数的参数
+     * @return void
      */
-    public function add($callback, array $args, $resource, $type)
+    public function add($resource, $func, $type, array $args = [])
     {
         $id = (int)$resource;
         if ($type == self::EVENT_TYPE_READ) {
             $this->readResources[$id] = $resource;
-            $this->readEventQueue[$id] = [$callback, $args];
+            $this->readEventQueue[$id] = [$func, $args];
         } else if ($type == self::EVENT_TYPE_WRITE) {
             $this->writeResources[$id] = $resource;
-            $this->writeEventQueue[$id] = [$callback, $args];
+            $this->writeEventQueue[$id] = [$func, $args];
         }
-
     }
 
     /**
