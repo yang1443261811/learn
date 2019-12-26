@@ -49,9 +49,9 @@ class WebSocket
      */
     public static $globalEvent;
 
-    public $callbackConnect;
+    public $onConnect;
 
-    public $callbackMessage;
+    public $onMessage;
 
     /**
      * Server constructor.
@@ -107,7 +107,6 @@ class WebSocket
      */
     public function connect($socket)
     {
-        echo 'call---->';
         //接收一个链接
         if (($connection = socket_accept($socket)) == false) {
             return;
@@ -119,35 +118,50 @@ class WebSocket
             'handshake' => false,
             'resource'  => $connection,
         ];
-        print_r($this->sockets);
+        //添加事件处理
         static::$globalEvent->add([$this, 'reader'], array('reader'), $connection, EventInterface::EVENT_TYPE_READ);
-
-        if (is_callable($this->callbackConnect)) {
-            call_user_func($this->callbackConnect, $connection);
+        if (is_callable($this->onConnect)) {
+            call_user_func($this->onConnect, $connection);
         }
     }
 
+    /**
+     * 读取客户端发来的数据
+     *
+     * @param $connect
+     */
     public function reader($connect)
     {
-        if (!$connect) {
-            echo $connect;
-            die('无效的socket实例');
+        $buffer = socket_read($connect, 8024);
+        $key = (int)$connect;
+        if (strlen($buffer) < 9) {
+           $this->close($key);
+           return;
         }
-        $buffer = '';
-        socket_recv($connect, $buffer, 2048, 0);
-        $id = (int)$connect;
-        if ($this->sockets[$id]['handshake']) {
+
+        if ($this->sockets[$key]['handshake']) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
             //执行事件回调
-            if (is_callable($this->callbackMessage)) {
-                call_user_func($this->callbackMessage, $data);
+            if (is_callable($this->onMessage)) {
+                call_user_func($this->onMessage, $data);
             }
         } else {
             $this->handshake($connect, $buffer);
-            $this->sockets[$id]['handshake'] = true;
+            $this->sockets[$key]['handshake'] = true;
         }
+    }
+
+    /**
+     * 关闭链接
+     *
+     * @param $key
+     */
+    public function close($key)
+    {
+        unset($this->sockets[$key]);
+        socket_close($this->sockets[$key]['resource']);
     }
 
     /**
