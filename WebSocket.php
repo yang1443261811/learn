@@ -119,8 +119,6 @@ class WebSocket
         //接收一个链接
         $connection = socket_accept($socket);
         if ($connection) {
-            //获取连接ID
-            $connect_id = $this->getClientId($connection);
             //初始化新的连接
             $newConnection = new Connection($connection, static::$globalEvent);
             $newConnection->onMessage = array($this, 'onMessage');
