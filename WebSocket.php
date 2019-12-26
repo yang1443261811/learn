@@ -138,10 +138,9 @@ class WebSocket
     public function reader($connect)
     {
         $bytes = @socket_recv($connect, $buffer, 2048, 0);
-        $connectId = $this->getClientId($connect);
         if (!$bytes) {
             socket_close($connect);
-            unset($this->sockets[$connectId]);
+//            unset($this->sockets[$connectId]);
             static::$globalEvent->del($connect);
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
@@ -149,6 +148,7 @@ class WebSocket
             return;
         }
 
+        $connectId = $this->getClientId($connect);
         if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
