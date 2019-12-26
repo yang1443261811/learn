@@ -116,8 +116,12 @@ class WebSocket
         socket_set_nonblock($connection);
         //获取连接ID
         $connect_id = $this->getClientId($connection);
+        if (isset($this->sockets[$connect_id])) {
+            echo 'already exist';
+            print_r($this->sockets[$connect_id]);die;
+        }
         $this->sockets[$connect_id] = [
-            'handshake' => false,
+            'handshake' => 0,
             'resource'  => $connection,
         ];
         //添加事件处理
@@ -141,7 +145,7 @@ class WebSocket
             return;
         }
 
-        if ($this->sockets[$connectId]['handshake']) {
+        if ($this->sockets[$connectId]['handshake'] == 0) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
@@ -151,7 +155,7 @@ class WebSocket
             }
         } else {
             $this->handshake($connect, $buffer);
-            $this->sockets[$connectId]['handshake'] = true;
+            $this->sockets[$connectId]['handshake'] = 1;
         }
     }
 
