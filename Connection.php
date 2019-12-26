@@ -62,12 +62,12 @@ class Connection
      *
      * @return void
      */
-    public function destroy()
+    public function destroy($socket)
     {
         //移出事件监听
-        $this->_event->del($this->_socket);
+        $this->_event->del($socket);
         //关闭连接
-        socket_close($this->_socket);
+        socket_close($socket);
     }
 
     /**
@@ -81,7 +81,7 @@ class Connection
         $len = @socket_recv($socket, $buffer, 2048, 0);
         //接收到的数据为空关闭连接
         if (!$len) {
-            $this->destroy();
+            $this->destroy($socket);
             return;
         }
 
