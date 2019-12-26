@@ -160,8 +160,8 @@ class WebSocket
      */
     public function close($key)
     {
-        unset($this->sockets[$key]);
         socket_close($this->sockets[$key]['resource']);
+        unset($this->sockets[$key]);
     }
 
     /**
