@@ -118,7 +118,8 @@ class WebSocket
         $connect_id = $this->getClientId($connection);
         if (isset($this->sockets[$connect_id])) {
             echo 'already exist';
-            print_r($this->sockets[$connect_id]);die;
+            print_r($this->sockets[$connect_id]);
+            die;
         }
         $this->sockets[$connect_id] = [
             'handshake' => 0,
@@ -149,7 +150,7 @@ class WebSocket
 
         if ($this->sockets[$connectId]['handshake'] == 1) {
             $data = Utils::decode($buffer);
-            echo $data;
+            print_r($data);
 //            $content = Utils::encode(json_encode($data));
 //            socket_write($connect, $content, strlen($content));
             //执行事件回调
