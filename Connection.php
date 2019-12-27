@@ -81,6 +81,9 @@ class Connection
         $len = socket_recv($socket, $buffer, 2048, 0);
         //接收到的数据为空关闭连接
         if (!$len) {
+            $err_code = socket_last_error();
+            $err_msg = socket_strerror($err_code);
+            $this->error(['error', $err_code, $err_msg]);
             $this->destroy();
         } else {
             //进行握手
@@ -95,9 +98,7 @@ class Connection
                 call_user_func($this->onMessage, $this->clientId, $data);
             }
         }
-        $err_code = socket_last_error();
-        $err_msg = socket_strerror($err_code);
-        $this->error(['error', $err_code, $err_msg]);
+
         return true;
     }
 
