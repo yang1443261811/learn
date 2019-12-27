@@ -78,6 +78,9 @@ class Connection
      */
     public function read($socket)
     {
+        $err_code = socket_last_error();
+        $err_msg = socket_strerror($err_code);
+        $this->error(['error', $err_code, $err_msg]);
         $len = socket_recv($socket, $buffer, 2048, 0);
         //接收到的数据为空关闭连接
         if (!$len) {
@@ -146,6 +149,19 @@ class Connection
         socket_write($this->_socket, $response, strlen($response));
 
         return true;
+    }
+
+    /**
+     * 记录debug信息
+     *
+     * @param array $info
+     */
+    private function error(array $info)
+    {
+        $time = date('Y-m-d H:i:s');
+        array_unshift($info, $time);
+        $info = array_map('json_encode', $info);
+        file_put_contents('./websocket_debug.log', implode(' | ', $info) . "\r\n", FILE_APPEND);
     }
 
 }
