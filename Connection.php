@@ -54,7 +54,7 @@ class Connection
         //设置socket为非阻塞
         socket_set_nonblock($this->_socket);
         //添加事件监听
-        $this->_event->add($this->_socket, array($this, 'read'), EventInterface::EVENT_TYPE_READ);
+        $this->_event->add($this->_socket, [$this, 'read'], EventInterface::EVENT_TYPE_READ);
     }
 
     /**
@@ -62,12 +62,12 @@ class Connection
      *
      * @return void
      */
-    public function destroy($socket)
+    public function destroy()
     {
         //移出事件监听
-        $this->_event->del($socket);
+        $this->_event->del($this->_socket);
         //关闭连接
-        socket_close($socket);
+        socket_close($this->_socket);
     }
 
     /**
@@ -81,8 +81,7 @@ class Connection
         $len = @socket_recv($socket, $buffer, 2048, 0);
         //接收到的数据为空关闭连接
         if (!$len) {
-            $this->destroy($socket);
-            return;
+            return $this->destroy();
         }
 
         //进行握手
@@ -91,13 +90,11 @@ class Connection
             $this->handshake = 1;
             //向客户端发送握手成功消息
             $this->send(['content' => 'done', 'type' => 'handshake',]);
-            return;
+        } else {
+            //接收客户端发送的数据并执行回调
+            $data = Utils::decode($buffer);
+            call_user_func($this->onMessage, $this->clientId, $data);
         }
-
-        //接收客户端发送的数据并执行回调
-        $data = Utils::decode($buffer);
-
-        call_user_func($this->onMessage, $this->clientId, $data);
     }
 
     /**
