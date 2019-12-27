@@ -122,6 +122,7 @@ class WebSocket
             //初始化新的连接
             $newConnection = new Connection($connection, static::$globalEvent);
             $newConnection->onMessage = array($this, 'onMessage');
+            $newConnection->onHandshake = array($this, 'handshake');
             $this->_clientConnections[$newConnection->clientId] = $newConnection;
         } else {
             $err_code = socket_last_error();
@@ -133,6 +134,32 @@ class WebSocket
     public function onMessage($client_id, $data)
     {
         $this->_clientConnections[$client_id]->send($data);
+
+        return true;
+    }
+
+    /**
+     * 回应握手
+     *
+     * @param object $connection
+     * @param string $buffer
+     * @return bool
+     */
+    public function handshake($connection, $buffer)
+    {
+        //对接收到的buffer处理,并回馈握手！！
+        $buf = substr($buffer, strpos($buffer, 'Sec-WebSocket-Key:') + 18);
+        $key = trim(substr($buf, 0, strpos($buf, "\r\n")));
+        $hash = base64_encode(sha1($key . "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", true));
+        $response = "HTTP/1.1 101 Switching Protocols\r\n";
+        $response .= "Upgrade: websocket\r\n";
+        $response .= "Sec-WebSocket-Version: 13\r\n";
+        $response .= "Connection: Upgrade\r\n";
+        $response .= "Sec-WebSocket-Accept: " . $hash . "\r\n\r\n";
+        //回馈握手
+        socket_write($connection->_socket, $response, strlen($response));
+
+        return true;
     }
 
 

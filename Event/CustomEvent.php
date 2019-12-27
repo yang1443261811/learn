@@ -21,7 +21,7 @@ class CustomEvent implements EventInterface
      * @param $func string|array 回调函数
      * @param $type int 类型
      * @param $args array 回调函数的参数
-     * @return bool
+     * @return void
      */
     public function add($resource, $func, $type, array $args = [])
     {
