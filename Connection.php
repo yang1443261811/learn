@@ -74,27 +74,29 @@ class Connection
      * 读取客户端的数据
      *
      * @param object $socket
-     * @return void
+     * @return true
      */
     public function read($socket)
     {
-        $len = @socket_recv($socket, $buffer, 2048, 0);
+        $len = socket_recv($socket, $buffer, 2048, 0);
         //接收到的数据为空关闭连接
         if (!$len) {
-            return $this->destroy();
+            $this->destroy();
+        } else {
+            //进行握手
+            if ($this->handshake == 0) {
+                $this->handshake($buffer);
+                $this->handshake = 1;
+                //向客户端发送握手成功消息
+                $this->send(['content' => 'done', 'type' => 'handshake',]);
+            } else {
+                //接收客户端发送的数据并执行回调
+                $data = Utils::decode($buffer);
+                call_user_func($this->onMessage, $this->clientId, $data);
+            }
         }
 
-        //进行握手
-        if ($this->handshake == 0) {
-            $this->handshake($buffer);
-            $this->handshake = 1;
-            //向客户端发送握手成功消息
-            $this->send(['content' => 'done', 'type' => 'handshake',]);
-        } else {
-            //接收客户端发送的数据并执行回调
-            $data = Utils::decode($buffer);
-            call_user_func($this->onMessage, $this->clientId, $data);
-        }
+        return true;
     }
 
     /**
