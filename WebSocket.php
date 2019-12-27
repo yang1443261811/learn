@@ -120,7 +120,7 @@ class WebSocket
         $connection = socket_accept($socket);
         if ($connection) {
             //初始化新的连接
-            $newConnection = new Connection($connection, static::$globalEvent);
+            $newConnection = new Connection($connection);
             $newConnection->onMessage = array($this, 'onMessage');
             $newConnection->onHandshake = array($this, 'handshake');
             static::$clientConnections[$newConnection->clientId] = $newConnection;

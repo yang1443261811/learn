@@ -57,6 +57,6 @@ class CustomEvent implements EventInterface
      */
     public function loop()
     {
-        $this->eventBase->loop();
+        $this->eventBase->loop() OR exit('错误退出');
     }
 }

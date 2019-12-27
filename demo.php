@@ -140,9 +140,7 @@ class WebSocket
         $bytes = @socket_recv($connect, $buffer, 2048, 0);
         $connectId = $this->getClientId($connect);
         if (!$bytes) {
-            socket_close($connect);
-            unset($this->sockets[$connectId]);
-            static::$globalEvent->del($connect);
+            $this->close($connect, $connectId);
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
             $this->error(['error_init_server', $err_code, $err_msg]);
@@ -166,12 +164,14 @@ class WebSocket
     /**
      * 关闭链接
      *
-     * @param $key
+     * @param $connect
+     * @param $connectId
      */
-    public function close($key)
+    public function close($connect, $connectId)
     {
-        socket_close($this->sockets[$key]['resource']);
-        unset($this->sockets[$key]);
+        socket_close($connect);
+        unset($this->sockets[$connectId]);
+        static::$globalEvent->del($connect);
     }
 
     /**

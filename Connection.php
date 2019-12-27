@@ -112,7 +112,6 @@ class Connection
 
         //接收客户端发送的数据并执行回调
         $data = Utils::decode($readBuffer);
-
         return call_user_func($this->onMessage, $this->clientId, $data);
     }
 
