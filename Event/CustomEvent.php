@@ -1,5 +1,5 @@
 <?php
-require_once '../Utils.php';
+require_once './../Utils.php';
 require_once 'EventInterface.php';
 
 class CustomEvent implements EventInterface
