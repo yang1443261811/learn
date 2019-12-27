@@ -1,16 +1,10 @@
 <?php
 require_once './Event/EventInterface.php';
+require_once './WebSocket.php';
 require_once 'Utils.php';
 
 class Connection
 {
-    /**
-     * 事件对象
-     *
-     * @var EventInterface
-     */
-    public $_event;
-
     /**
      * socket实例
      *
@@ -42,19 +36,16 @@ class Connection
     /**
      * Connection constructor.
      * @param object $socket
-     * @param EventInterface $event
      */
-    public function __construct($socket, EventInterface &$event)
+    public function __construct($socket)
     {
         $this->_socket = $socket;
         //生成ID
         $this->clientId = $this->getClientId();
-        //事件处理类
-        $this->_event = $event;
         //设置socket为非阻塞
         socket_set_nonblock($this->_socket);
         //添加事件监听
-        $this->_event->add($this->_socket, [$this, 'read'], EventInterface::EVENT_TYPE_READ);
+        WebSocket::$globalEvent->add($this->_socket, [$this, 'read'], EventInterface::EVENT_TYPE_READ);
     }
 
     /**
@@ -65,7 +56,7 @@ class Connection
     public function destroy()
     {
         //移出事件监听
-        $this->_event->del($this->_socket);
+        WebSocket::$globalEvent->del($this->_socket);
         //关闭连接
         socket_close($this->_socket);
     }
@@ -80,28 +71,24 @@ class Connection
     {
         $len = socket_recv($socket, $buffer, 2048, 0);
         //接收到的数据为空关闭连接
-//        if (!$len) {
-//            $err_code = socket_last_error();
-//            $err_msg = socket_strerror($err_code);
-//            $this->error(['error', $err_code, $err_msg]);
-//            $this->destroy();
-//        } else {
-        //进行握手
-        if ($this->handshake == 0) {
-            $this->handshake($buffer);
-            $this->handshake = 1;
-            //向客户端发送握手成功消息
-            $this->send(['content' => 'done', 'type' => 'handshake',]);
+        if (!$len) {
+            $err_code = socket_last_error();
+            $err_msg = socket_strerror($err_code);
+            $this->error(['error', $err_code, $err_msg]);
+            $this->destroy();
         } else {
-            //接收客户端发送的数据并执行回调
-            $data = Utils::decode($buffer);
-            call_user_func($this->onMessage, $this->clientId, $data);
+            //进行握手
+            if ($this->handshake == 0) {
+                $this->handshake($buffer);
+                $this->handshake = 1;
+                //向客户端发送握手成功消息
+                $this->send(['content' => 'done', 'type' => 'handshake',]);
+            } else {
+                //接收客户端发送的数据并执行回调
+                $data = Utils::decode($buffer);
+                call_user_func($this->onMessage, $this->clientId, $data);
+            }
         }
-//        }
-
-        $err_code = socket_last_error();
-        $err_msg = socket_strerror($err_code);
-        $this->error(['error', $err_code, $err_msg]);
 
         return true;
     }
