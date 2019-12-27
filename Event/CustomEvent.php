@@ -57,10 +57,6 @@ class CustomEvent implements EventInterface
      */
     public function loop()
     {
-        try {
-            $this->eventBase->loop();
-        } catch (Exception $e) {
-            exit($e->getMessage());
-        }
+        $this->eventBase->loop();
     }
 }

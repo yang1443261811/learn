@@ -1,54 +1,238 @@
 <?php
+require_once './Utils.php';
+require_once './Event/Select.php';
+require_once './Event/CustomEvent.php';
+require_once './Event/EventInterface.php';
 
-class EventLib
+
+class WebSocket
 {
-    public $_allEvents = array();
+    /**
+     * 监听的地址
+     *
+     * @var string
+     */
+    private $host;
 
-    public $eventBase;
+    /**
+     * 监听的端口号
+     *
+     * @var int
+     */
+    private $port;
 
-    public function __construct()
+    /**
+     * socket链接池
+     *
+     * @var array
+     */
+    protected $sockets = [];
+
+    /**
+     * socket 主服务
+     *
+     * @var
+     */
+    protected $master;
+
+    /**
+     * 接入的用户表
+     *
+     * @var array
+     */
+    protected $users = [];
+
+    /**
+     * 事件对象
+     *
+     * @var object
+     */
+    public static $globalEvent;
+
+    public $onConnect;
+
+    public $onMessage;
+
+    /**
+     * Server constructor.
+     * @param string $host
+     * @param int $port
+     */
+    public function __construct($host = '127.0.0.1', $port = 9999)
     {
-        $this->eventBase = new EventBase();
+        $this->port = $port;
+        $this->host = $host;
+        static::$globalEvent = $this->getEventPollClass('event');
     }
 
-    public function add($fd, $func, $args = array())
+    public function run()
     {
-        $fd_key = (int)$fd;
-        $event = new \Event($this->eventBase, $fd, \Event::READ | \Event::PERSIST, $func, $fd);
-        if (!$event || !$event->add()) {
-            return false;
+        //创建socket
+        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+
+        //返回bool.套接字resource,协议级别,可用的socket选项,值。
+        socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1);
+
+        //将socket绑定到指定的IP:port上
+        socket_bind($this->master, $this->host, $this->port);
+
+        //开始监听
+        socket_listen($this->master);
+
+        //将服务器设置为非阻塞
+        socket_set_nonblock($this->master);
+
+        static::$globalEvent->add($this->master, [$this, 'connect'], EventInterface::EVENT_TYPE_READ);
+
+        static::$globalEvent->loop();
+    }
+
+    public function getEventPollClass($type = null)
+    {
+        if ($type == 'event') {
+            $instance = new CustomEvent();
+        } else {
+            $instance = new Select();
         }
-        $this->_allEvents[$fd_key] = $event;
+
+        return $instance;
+    }
+
+    /**
+     * 将socket加入链接池
+     *
+     * @param object $socket
+     */
+    public function connect($socket)
+    {
+        //接收一个链接
+        $connection = socket_accept($socket);
+        if (!$connection) {
+            $err_code = socket_last_error();
+            $err_msg = socket_strerror($err_code);
+            $this->error(['error_init_server', $err_code, $err_msg]);
+            return;
+        }
+
+        // 将连接socket也设置为非阻塞模式
+        socket_set_nonblock($connection);
+        //获取连接ID
+        $connect_id = $this->getClientId($connection);
+
+        $this->sockets[$connect_id] = [
+            'handshake' => 0,
+            'resource'  => $connection,
+        ];
+        //添加事件处理
+        static::$globalEvent->add($connection, [$this, 'reader'], EventInterface::EVENT_TYPE_READ);
+        if (is_callable($this->onConnect)) {
+            call_user_func($this->onConnect, $connection);
+        }
+    }
+
+    /**
+     * 读取客户端发来的数据
+     *
+     * @param $connect
+     */
+    public function reader($connect)
+    {
+        $bytes = @socket_recv($connect, $buffer, 2048, 0);
+        $connectId = $this->getClientId($connect);
+        if (!$bytes) {
+            socket_close($connect);
+            unset($this->sockets[$connectId]);
+            static::$globalEvent->del($connect);
+            $err_code = socket_last_error();
+            $err_msg = socket_strerror($err_code);
+            $this->error(['error_init_server', $err_code, $err_msg]);
+            return;
+        }
+
+        if ($this->sockets[$connectId]['handshake'] == 1) {
+            $data = Utils::decode($buffer);
+            $content = Utils::encode(json_encode($data));
+            socket_write($connect, $content, strlen($content));
+            //执行事件回调
+            if (is_callable($this->onMessage)) {
+                call_user_func($this->onMessage, $data);
+            }
+        } else {
+            $this->handshake($connect, $buffer);
+            $this->sockets[$connectId]['handshake'] = 1;
+        }
+    }
+
+    /**
+     * 关闭链接
+     *
+     * @param $key
+     */
+    public function close($key)
+    {
+        socket_close($this->sockets[$key]['resource']);
+        unset($this->sockets[$key]);
+    }
+
+    /**
+     * 获取客户端ID
+     *
+     * @param object $socket
+     * @return string
+     */
+    public function getClientId($socket)
+    {
+        socket_getpeername($socket, $ip, $port);
+        $connect_id = (int)$socket;
+        $client_id = Utils::addressToClientId($ip, $port, $connect_id);
+
+        return $client_id;
+    }
+
+    /**
+     * 回应握手
+     *
+     * @param object $socket
+     * @param string $buffer
+     * @return bool
+     */
+    protected function handshake($socket, $buffer)
+    {
+        //对接收到的buffer处理,并回馈握手！！
+        $buf = substr($buffer, strpos($buffer, 'Sec-WebSocket-Key:') + 18);
+        $key = trim(substr($buf, 0, strpos($buf, "\r\n")));
+        $hash = base64_encode(sha1($key . "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", true));
+        $response = "HTTP/1.1 101 Switching Protocols\r\n";
+        $response .= "Upgrade: websocket\r\n";
+        $response .= "Sec-WebSocket-Version: 13\r\n";
+        $response .= "Connection: Upgrade\r\n";
+        $response .= "Sec-WebSocket-Accept: " . $hash . "\r\n\r\n";
+        //回馈握手
+        socket_write($socket, $response, strlen($response));
+        //向客户端发送握手成功消息
+        $msg = Utils::encode(json_encode([
+            'content' => 'done',
+            'type'    => 'handshake',
+        ]));
+        socket_write($socket, $msg, strlen($msg));
+
         return true;
     }
 
-    public function loop()
+    /**
+     * 记录debug信息
+     *
+     * @param array $info
+     */
+    private function error(array $info)
     {
-        $this->eventBase->loop();
+        $time = date('Y-m-d H:i:s');
+        array_unshift($info, $time);
+        $info = array_map('json_encode', $info);
+        file_put_contents('./websocket_debug.log', implode(' | ', $info) . "\r\n", FILE_APPEND);
     }
+
 }
 
-
-$host = '0.0.0.0';
-$port = 9999;
-$listen_socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-
-socket_bind($listen_socket, $host, $port);
-
-socket_listen($listen_socket);
-
-echo PHP_EOL . PHP_EOL . "Http Server ON : http://{$host}:{$port}" . PHP_EOL;
-
-socket_set_nonblock($listen_socket);
-
-$eventLib = new EventLib();
-$eventLib->add($listen_socket, function ($listen_socket) {
-    if (($connect_socket = socket_accept($listen_socket)) != false) {
-        echo "有新的客户端：" . intval($connect_socket) . PHP_EOL;
-        $msg = "HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nHi";
-        socket_write($connect_socket, $msg, strlen($msg));
-        socket_close($connect_socket);
-    }
-}, $listen_socket);
-
-$eventLib->loop();
+$webSocket = new WebSocket();
+$webSocket->run();
