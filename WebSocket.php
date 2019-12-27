@@ -27,7 +27,7 @@ class WebSocket
      *
      * @var array
      */
-    protected $_clientConnections = [];
+    public static $clientConnections = [];
 
     /**
      * socket 主服务
@@ -123,7 +123,7 @@ class WebSocket
             $newConnection = new Connection($connection, static::$globalEvent);
             $newConnection->onMessage = array($this, 'onMessage');
             $newConnection->onHandshake = array($this, 'handshake');
-            $this->_clientConnections[$newConnection->clientId] = $newConnection;
+            static::$clientConnections[$newConnection->clientId] = $newConnection;
         } else {
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
@@ -133,7 +133,7 @@ class WebSocket
 
     public function onMessage($client_id, $data)
     {
-        $this->_clientConnections[$client_id]->send($data);
+        static::$clientConnections[$client_id]->send($data);
 
         return true;
     }

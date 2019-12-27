@@ -41,6 +41,13 @@ class Connection
     public $onMessage;
 
     /**
+     * 关闭连接时的回调
+     *
+     * @var callback
+     */
+    public $onClose;
+
+    /**
      * 连接的ID
      *
      * @var string
@@ -73,6 +80,11 @@ class Connection
         WebSocket::$globalEvent->del($this->_socket);
         //关闭连接
         socket_close($this->_socket);
+        //移出连接池的连接
+        unset(Websocket::$clientConnections[$this->clientId]);
+        if ($this->onClose) {
+            call_user_func($this->onClose, $this);
+        }
 
         return true;
     }
