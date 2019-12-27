@@ -10,7 +10,7 @@
 <script>
 
   var params = getQueryString('uid');
-  console.log(params);
+  // console.log(params);
   var ws = new WebSocket("ws://localhost:9999");
   ws.onopen = function (e) {
     if (ws.readyState === 1) {
