@@ -23,7 +23,7 @@ class Connection
      *
      * @var int
      */
-    public $handshake;
+    public $handshake = 0;
 
     /**
      * 接收到数据时的回调
