@@ -93,4 +93,17 @@ class Utils
         return json_decode($decoded, true);
     }
 
+    /**
+     * 记录debug信息
+     *
+     * @param array $info
+     */
+    public static function log(array $info)
+    {
+        $time = date('Y-m-d H:i:s');
+        array_unshift($info, $time);
+        $info = array_map('json_encode', $info);
+        file_put_contents('./websocket_debug.log', implode(' | ', $info) . "\r\n", FILE_APPEND);
+    }
+
 }

@@ -127,7 +127,7 @@ class WebSocket
         } else {
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
-            $this->error(['error', $err_code, $err_msg]);
+            Utils::log(['error', $err_code, $err_msg]);
         }
     }
 
@@ -162,19 +162,6 @@ class WebSocket
         return true;
     }
 
-
-    /**
-     * 记录debug信息
-     *
-     * @param array $info
-     */
-    private function error(array $info)
-    {
-        $time = date('Y-m-d H:i:s');
-        array_unshift($info, $time);
-        $info = array_map('json_encode', $info);
-        file_put_contents('./websocket_debug.log', implode(' | ', $info) . "\r\n", FILE_APPEND);
-    }
 
 }
 

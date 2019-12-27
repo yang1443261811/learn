@@ -1,5 +1,5 @@
 <?php
-
+require_once '../Utils.php';
 require_once 'EventInterface.php';
 
 class CustomEvent implements EventInterface
@@ -42,6 +42,7 @@ class CustomEvent implements EventInterface
     {
         $key = (int)$resource;
         unset($this->allEvents[$key]);
+        Utils::log(["call del key:$key"]);
     }
 
     /**
@@ -57,6 +58,6 @@ class CustomEvent implements EventInterface
      */
     public function loop()
     {
-        $this->eventBase->loop() OR exit('错误退出');
+        $this->eventBase->loop();
     }
 }
