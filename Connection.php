@@ -96,9 +96,8 @@ class Connection
 
         //接收客户端发送的数据并执行回调
         $data = Utils::decode($buffer);
-        if (is_callable($this->onMessage)) {
-            call_user_func($this->onMessage, $this->clientId, $data);
-        }
+
+        call_user_func($this->onMessage, $this->clientId, $data);
     }
 
     /**
@@ -116,7 +115,6 @@ class Connection
     /**
      * 获取客户端ID
      *
-     * @param object $socket
      * @return string
      */
     public function getClientId()
