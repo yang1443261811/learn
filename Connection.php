@@ -44,7 +44,7 @@ class Connection
      * @param object $socket
      * @param EventInterface $event
      */
-    public function __construct($socket, EventInterface $event)
+    public function __construct($socket, EventInterface &$event)
     {
         $this->_socket = $socket;
         //生成ID
