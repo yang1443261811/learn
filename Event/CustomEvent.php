@@ -26,8 +26,11 @@ class CustomEvent implements EventInterface
     {
 //        $event = new \Event($this->eventBase, $resource, Event::READ | Event::PERSIST, $func, $resource);
         $event = new \Event($this->eventBase, $resource, Event::READ | Event::PERSIST, function ($fd) use ($func) {
-            static::log($func);
-            call_user_func($func, $fd);
+            try {
+                call_user_func($func, $fd);
+            } catch (Exception $e) {
+               echo $e->getMessage();die;
+            }
         }, $resource);
         $key = (int)$resource;
         $this->allEvents[$key] = $event;
