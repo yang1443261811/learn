@@ -141,15 +141,15 @@ class WebSocket
     public function reader($connect)
     {
         $len = @socket_recv($connect, $buffer, 2048, 0);
-        $clientId = $this->getClientId($connect);
         if (!$len) {
-            $this->close($connect, $clientId);
+            $this->close($connect);
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
             Utils::log(['error_init_server', $err_code, $err_msg]);
             return;
         }
 
+        $clientId = $this->getClientId($connect);
         if (static::$clientConnections[$clientId]->handshakeCompleted) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
@@ -187,7 +187,7 @@ class WebSocket
     public function close($connect, $clientId)
     {
         socket_close($connect);
-        unset(static::$clientConnections[$clientId]);
+//        unset(static::$clientConnections[$clientId]);
         static::$globalEvent->del($connect);
     }
 
