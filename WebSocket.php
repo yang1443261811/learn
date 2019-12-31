@@ -121,14 +121,74 @@ class WebSocket
         if ($client) {
             //初始化新的连接
             $newConnection = new Connection($client);
-            $newConnection->onMessage = array($this, 'onMessage');
-            $newConnection->onHandshake = array($this, 'handshake');
+//            $newConnection->onMessage = array($this, 'onMessage');
+//            $newConnection->onHandshake = array($this, 'handshake');
             static::$clientConnections[$newConnection->clientId] = $newConnection;
+            //添加事件监听
+            static::$globalEvent->add($client, array($this, 'reader'), EventInterface::EVENT_TYPE_READ);
         } else {
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);
             Utils::log(['error', $err_code, $err_msg]);
         }
+    }
+
+    /**
+     * 读取客户端发来的数据
+     *
+     * @param $connect
+     */
+    public function reader($connect)
+    {
+        $len = @socket_recv($connect, $buffer, 2048, 0);
+        $clientId = $this->getClientId($connect);
+        if (!$len) {
+            $this->close($connect, $clientId);
+            $err_code = socket_last_error();
+            $err_msg = socket_strerror($err_code);
+            Utils::log(['error_init_server', $err_code, $err_msg]);
+            return;
+        }
+
+        if (static::$clientConnections[$clientId]->handshakeCompleted) {
+            $data = Utils::decode($buffer);
+            $content = Utils::encode(json_encode($data));
+            socket_write($connect, $content, strlen($content));
+            //执行事件回调
+            if (is_callable($this->onMessage)) {
+                call_user_func($this->onMessage, $data);
+            }
+        } else {
+            $this->handshake($connect, $buffer);
+            static::$clientConnections[$clientId]->handshakeCompleted = true;
+        }
+    }
+
+    /**
+     * 获取客户端ID
+     *
+     * @return string
+     */
+    public function getClientId($socket)
+    {
+        socket_getpeername($socket, $ip, $port);
+        $connect_id = (int)$socket;
+        $client_id = Utils::addressToClientId($ip, $port, $connect_id);
+
+        return $client_id;
+    }
+
+    /**
+     * 关闭链接
+     *
+     * @param $connect
+     * @param $connectId
+     */
+    public function close($connect, $clientId)
+    {
+        socket_close($connect);
+        unset(static::$clientConnections[$clientId]);
+        static::$globalEvent->del($connect);
     }
 
     public function onMessage($client_id, $data)
@@ -157,7 +217,7 @@ class WebSocket
         $response .= "Connection: Upgrade\r\n";
         $response .= "Sec-WebSocket-Accept: " . $hash . "\r\n\r\n";
         //回馈握手
-        socket_write($connection->_socket, $response, strlen($response));
+        socket_write($connection, $response, strlen($response));
 
         return true;
     }

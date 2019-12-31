@@ -24,19 +24,7 @@ class CustomEvent implements EventInterface
      */
     public function add($resource, $func, $type, array $args = [])
     {
-//        $event = new \Event($this->eventBase, $resource, Event::READ | Event::PERSIST, $func, $resource);
-        $event = new \Event($this->eventBase, $resource, Event::READ | Event::PERSIST, function ($fd) use ($func) {
-            if (!is_callable($func)) {
-                echo '不可用';
-                die;
-            }
-            try {
-                call_user_func($func, $fd);
-            } catch (Exception $e) {
-                echo $e->getMessage();
-                die;
-            }
-        }, $resource);
+        $event = new \Event($this->eventBase, $resource, Event::READ | Event::PERSIST, $func, $resource);
         $key = (int)$resource;
         $this->allEvents[$key] = $event;
 

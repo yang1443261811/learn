@@ -65,8 +65,6 @@ class Connection
         $this->clientId = $this->getClientId();
         //设置socket为非阻塞
         socket_set_nonblock($this->_socket);
-        //添加事件监听
-        WebSocket::$globalEvent->add($this->_socket, array($this, 'baseRead'), EventInterface::EVENT_TYPE_READ);
     }
 
     /**
