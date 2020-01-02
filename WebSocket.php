@@ -122,14 +122,14 @@ class WebSocket
         $client = socket_accept($socket);
         if ($client) {
             //初始化新的连接
-            $clientId = $this->getClientId($client);
-            static::$clients[$clientId] = [
-                'handshake' => false,
-                'resource'  => $client,
-            ];
-            $newConnection = new Connection($client);
+//            $clientId = $this->getClientId($client);
+//            static::$clients[$clientId] = [
+//                'handshake' => false,
+//                'resource'  => $client,
+//            ];
 //            $newConnection->onMessage = array($this, 'onMessage');
 //            $newConnection->onHandshake = array($this, 'handshake');
+            $newConnection = new Connection($client);
             static::$clientConnections[$newConnection->clientId] = $newConnection;
             //添加事件监听
             static::$globalEvent->add($client, array($this, 'reader'), EventInterface::EVENT_TYPE_READ);
@@ -157,17 +157,18 @@ class WebSocket
         }
 
         $clientId = $this->getClientId($connect);
-        if (static::$clients[$clientId]['handshake']) {
+        if (!isset(static::$clientConnections[$clientId])) {
+            die('dont exist');
+        }
+        if (static::$clientConnections[$clientId]->handshakeCompleted) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
             //执行事件回调
-            if (is_callable($this->onMessage)) {
-                call_user_func($this->onMessage, $data);
-            }
+            call_user_func(array($this, 'onMessage'), $clientId, $data);
         } else {
             $this->handshake($connect, $buffer);
-            static::$clients[$clientId]['handshake'] = true;
+            static::$clientConnections[$clientId]->handshakeCompleted = true;
         }
     }
 
