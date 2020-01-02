@@ -75,7 +75,7 @@ class WebSocket
     {
         $this->port = $port;
         $this->host = $host;
-        static::$globalEvent = $this->getEventPollClass('event');
+        static::$globalEvent = $this->getEventPollClass();
     }
 
     public function run()
@@ -165,7 +165,7 @@ class WebSocket
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
             //执行事件回调
-            call_user_func(array($this, 'onMessage'), $clientId, $data);
+//            call_user_func(array($this, 'onMessage'), $clientId, $data);
         } else {
             $this->handshake($connect, $buffer);
             static::$clientConnections[$clientId]->handshakeCompleted = true;
