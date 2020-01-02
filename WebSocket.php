@@ -29,6 +29,8 @@ class WebSocket
      */
     public static $clientConnections = [];
 
+    public static $clients = [];
+
     /**
      * socket 主服务
      *
@@ -121,14 +123,14 @@ class WebSocket
         if ($client) {
             //初始化新的连接
             $clientId = $this->getClientId($client);
-            static::$clientConnections[$clientId] = [
+            static::$clients[$clientId] = [
                 'handshake' => false,
                 'resource'  => $client,
             ];
-//            $newConnection = new Connection($client);
+            $newConnection = new Connection($client);
 //            $newConnection->onMessage = array($this, 'onMessage');
 //            $newConnection->onHandshake = array($this, 'handshake');
-//            static::$clientConnections[$newConnection->clientId] = $newConnection;
+            static::$clientConnections[$newConnection->clientId] = $newConnection;
             //添加事件监听
             static::$globalEvent->add($client, array($this, 'reader'), EventInterface::EVENT_TYPE_READ);
         } else {
@@ -155,7 +157,7 @@ class WebSocket
         }
 
         $clientId = $this->getClientId($connect);
-        if (static::$clientConnections[$clientId]['handshake']) {
+        if (static::$clients[$clientId]['handshake']) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
@@ -165,7 +167,7 @@ class WebSocket
             }
         } else {
             $this->handshake($connect, $buffer);
-            static::$clientConnections[$clientId]['handshake'] = true;
+            static::$clients[$clientId]['handshake'] = true;
         }
     }
 
