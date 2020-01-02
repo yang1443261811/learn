@@ -122,17 +122,10 @@ class WebSocket
         $client = socket_accept($socket);
         if ($client) {
             //初始化新的连接
-//            $clientId = $this->getClientId($client);
-//            static::$clients[$clientId] = [
-//                'handshake' => false,
-//                'resource'  => $client,
-//            ];
-//            $newConnection->onMessage = array($this, 'onMessage');
-//            $newConnection->onHandshake = array($this, 'handshake');
             $newConnection = new Connection($client);
+            $newConnection->onMessage = array($this, 'onMessage');
+            $newConnection->onHandshake = array($this, 'handshake');
             static::$clientConnections[$newConnection->clientId] = $newConnection;
-            //添加事件监听
-            static::$globalEvent->add($client, array($this, 'reader'), EventInterface::EVENT_TYPE_READ);
         } else {
             $err_code = socket_last_error();
             $err_msg = socket_strerror($err_code);

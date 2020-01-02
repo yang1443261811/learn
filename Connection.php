@@ -54,6 +54,8 @@ class Connection
      */
     public $clientId;
 
+    const READ_BUFFER_SIZE = 65535;
+
     /**
      * Connection constructor.
      * @param object $socket
@@ -65,6 +67,9 @@ class Connection
         $this->clientId = $this->getClientId();
         //设置socket为非阻塞
         socket_set_nonblock($this->_socket);
+
+        //添加事件监听
+        WebSocket::$globalEvent->add($this->_socket, array($this, 'baseRead'), EventInterface::EVENT_TYPE_READ);
     }
 
     /**
@@ -95,22 +100,20 @@ class Connection
      */
     public function baseRead($socket)
     {
-        $readBuffer = '';
-        $len = socket_recv($socket, $readBuffer, 2048, 0);
-        //如果没有接收到数据就关闭连接
-        if (!$len) {
+        $buffer = socket_read($socket, 65535);
+        if (!$buffer || strlen($buffer) < 9) {
             return $this->destroy();
         }
 
         //如果设置了握手回调则执行回调
         if (isset($this->onHandshake) && !$this->handshakeCompleted) {
             $this->handshakeCompleted = true;
-            return call_user_func($this->onHandshake, $this, $readBuffer);
+            call_user_func($this->onHandshake, $socket, $buffer);
+        } else {
+            //接收客户端发送的数据并执行回调
+            $data = Utils::decode($buffer);
+            call_user_func($this->onMessage, $this->clientId, $data);
         }
-
-        //接收客户端发送的数据并执行回调
-        $data = Utils::decode($readBuffer);
-        return call_user_func($this->onMessage, $this->clientId, $data);
     }
 
     /**
