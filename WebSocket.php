@@ -120,10 +120,15 @@ class WebSocket
         $client = socket_accept($socket);
         if ($client) {
             //初始化新的连接
-            $newConnection = new Connection($client);
+            $clientId = $this->getClientId($client);
+            static::$clientConnections[$clientId] = [
+                'handshake' => false,
+                'resource'  => $client,
+            ];
+//            $newConnection = new Connection($client);
 //            $newConnection->onMessage = array($this, 'onMessage');
 //            $newConnection->onHandshake = array($this, 'handshake');
-            static::$clientConnections[$newConnection->clientId] = $newConnection;
+//            static::$clientConnections[$newConnection->clientId] = $newConnection;
             //添加事件监听
             static::$globalEvent->add($client, array($this, 'reader'), EventInterface::EVENT_TYPE_READ);
         } else {
@@ -150,7 +155,7 @@ class WebSocket
         }
 
         $clientId = $this->getClientId($connect);
-        if (static::$clientConnections[$clientId]->handshakeCompleted) {
+        if (static::$clientConnections[$clientId]['handshake']) {
             $data = Utils::decode($buffer);
             $content = Utils::encode(json_encode($data));
             socket_write($connect, $content, strlen($content));
@@ -160,7 +165,7 @@ class WebSocket
             }
         } else {
             $this->handshake($connect, $buffer);
-            static::$clientConnections[$clientId]->handshakeCompleted = true;
+            static::$clientConnections[$clientId]['handshake'] = true;
         }
     }
 
@@ -184,7 +189,7 @@ class WebSocket
      * @param $connect
      * @param $connectId
      */
-    public function close($connect, $clientId)
+    public function close($connect)
     {
         socket_close($connect);
 //        unset(static::$clientConnections[$clientId]);
