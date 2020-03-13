@@ -2,26 +2,49 @@
 
 class Command
 {
-    public static $isDomain = false;
+    public static $is_domain = false;
+
+    public static $masterPid;
+
+    public static $pidFile;
+
+    public static function init()
+    {
+        if (static::$pidFile) {
+            $unique_prefix = uniqid();
+            static::$pidFile = "./$unique_prefix.pid";
+        }
+    }
 
     public static function run()
     {
+        static::init();
         static::parseCommand();
+        static::saveMasterPid();
         static::worker();
     }
 
     public static function parseCommand()
     {
         global $argv;
-        $filename = trim($argv[0]);
         $operation = trim($argv[1]);
-        $isDomain = isset($argv[2]) && trim($argv[2]) === '-d' ? true : false;
+        $is_domain = isset($argv[2]) && trim($argv[2]) === '-d' ? true : false;
+
+        $master_pid = \is_file(static::$pidFile) ? \file_get_contents(static::$pidFile) : 0;
+        $master_is_alive = $master_pid && \posix_kill($master_pid, 0);
+        if ($operation == 'start' && $master_is_alive) {
+            exit("current is running\n");
+        }
+        if (!$master_is_alive && in_array($operation, ['state', 'stop', 'restart'])) {
+            exit("current is not running\n");
+        }
+
         switch ($operation) {
             case 'start':
-                static::start($isDomain);
+                static::start($is_domain);
                 break;
             case 'stop':
-                static::stop();
+                static::stop($master_pid);
                 break;
             case 'restart':
                 static::restart();
@@ -35,14 +58,35 @@ class Command
     public static function start($isDomain)
     {
         if ($isDomain) {
-            static::$isDomain = true;
+            static::$is_domain = true;
             static::_daemon();
         }
     }
 
-    public static function stop()
+    public static function stop($masterPid)
     {
-        echo 'stop';
+        echo "stop running server\n";
+        //给当前正在运行的主进程发送终止信号SIGINT(ctrl+c)
+        if ($masterPid) {
+            posix_kill($masterPid, SIGINT);
+        }
+        $nowTime = time();
+        $timeout = 5;
+        while (true) {
+            //主进程是否在运行
+            $masterIsAlive = $masterPid && posix_kill($masterPid, SIG_DFL);
+            if ($masterIsAlive) {
+                //如果超时
+                if ((time() - $nowTime) > $timeout) {
+                    echo "stop master process failed: timeout {$timeout} s \n";
+                }
+                //等待10毫秒,再次判断是否终止.
+                usleep(10000);
+                continue;
+            }
+            break;
+        }
+        exit("server Stop: \033[40G[\033[49;32;5mOK\033[0m]\n");
     }
 
     public static function restart()
@@ -54,6 +98,15 @@ class Command
     {
         echo 'state';
     }
+
+    public static function saveMasterPid()
+    {
+        static::$masterPid = \posix_getpid();
+        if (false === \file_put_contents(static::$pidFile, static::$masterPid)) {
+            throw new Exception('can not save pid to ' . static::$pidFile);
+        }
+    }
+
 
     public static function _daemon()
     {
