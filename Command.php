@@ -12,7 +12,7 @@ class Command
     {
         if (static::$pidFile) {
             $unique_prefix = uniqid();
-            static::$pidFile = "./$unique_prefix.pid";
+            static::$pidFile = "./server_master_pid.pid";
         }
     }
 
