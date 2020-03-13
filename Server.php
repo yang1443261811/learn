@@ -241,9 +241,9 @@ class Server
     /**
      * 设置事件处理对象
      *
-     * @param Event $event
+     * @param Events $event
      */
-    public function setEvents(Event $event)
+    public function setEvents(Events $event)
     {
         $this->events = $event;
     }
@@ -256,7 +256,7 @@ class Server
 //print_r($address2);
 require_once './Event.php';
 $server = new Server();
-$server->setEvents(new Event());
+$server->setEvents(new Events());
 $server->run();
 
 

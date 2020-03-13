@@ -1,7 +1,5 @@
 <?php
 
-require_once './Server.php';
-
 class Event
 {
     public function onConnect($client_id)

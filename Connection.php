@@ -54,6 +54,9 @@ class Connection
      */
     public $clientId;
 
+    /**
+     * 读取数据的长度
+     */
     const READ_BUFFER_SIZE = 65535;
 
     /**
@@ -100,7 +103,7 @@ class Connection
      */
     public function baseRead($socket)
     {
-        $buffer = socket_read($socket, 65535);
+        $buffer = socket_read($socket, self::READ_BUFFER_SIZE);
         if (!$buffer || strlen($buffer) < 9) {
             return $this->destroy();
         }
@@ -141,18 +144,4 @@ class Connection
 
         return $client_id;
     }
-
-    /**
-     * 记录debug信息
-     *
-     * @param array $info
-     */
-    private function error(array $info)
-    {
-        $time = date('Y-m-d H:i:s');
-        array_unshift($info, $time);
-        $info = array_map('json_encode', $info);
-        file_put_contents('./websocket_debug.log', implode(' | ', $info) . "\r\n", FILE_APPEND);
-    }
-
 }
