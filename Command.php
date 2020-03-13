@@ -10,7 +10,7 @@ class Command
 
     public static function init()
     {
-        if (static::$pidFile) {
+        if (!static::$pidFile) {
             $unique_prefix = uniqid();
             static::$pidFile = "./server_master_pid.pid";
         }
