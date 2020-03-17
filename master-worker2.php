@@ -7,9 +7,9 @@ class Worker
 
     public static function runAll()
     {
-        static::runMaster();
-
         static::installHandler();
+
+        static::runMaster();
     }
 
     //开启主进程
