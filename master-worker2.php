@@ -16,7 +16,7 @@ class Worker
     public static function runMaster()
     {
         //确保进程有最大操作权限
-        unmask(0);
+        umask(0);
         $pid = pcntl_fork();
         switch ($pid) {
             case -1 :
@@ -47,7 +47,7 @@ class Worker
     //开启子进程
     public static function runWorker()
     {
-        unmask(0);
+        umask(0);
         $pid = pcntl_fork();
         switch ($pid) {
             case -1 :
