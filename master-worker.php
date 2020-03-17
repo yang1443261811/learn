@@ -13,6 +13,7 @@ switch ($pid) {
             exit("could not detach from terminal");
         }
 
+        @cli_set_process_title('master process');
         $id = getmypid();
         echo time() . " Master process, pid {$id}\n";
         $i = 0;
@@ -54,6 +55,7 @@ function start_worker_process()
         // exit;此处不可退出，否则Master进程就退出了
     } else {
         //实际代码
+        @cli_set_process_title('worker process');
         $id = getmypid();
         $rand = rand(1, 3);
         echo time() . " Worker process, pid {$id}. run $rand s\n";
