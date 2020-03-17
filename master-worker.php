@@ -10,10 +10,10 @@ switch ($pid) {
     case 0:
         // 从当前终端分离
         if (posix_setsid() == -1) {
-            exit("could not detach from terminal");
+            exit("could not detach from terminal\n");
         }
 
-        @cli_set_process_title('master process');
+        @cli_set_process_title('php: master process');
         $id = getmypid();
         echo time() . " Master process, pid {$id}\n";
         $i = 0;
@@ -38,7 +38,7 @@ switch ($pid) {
         break;
     default:
         // 父进程退出
-        exit('Parent process exit');
+        exit('Parent process exit\n');
 }
 
 /**
@@ -55,7 +55,7 @@ function start_worker_process()
         // exit;此处不可退出，否则Master进程就退出了
     } else {
         //实际代码
-        @cli_set_process_title('worker process');
+        @cli_set_process_title('php: worker process');
         $id = getmypid();
         $rand = rand(1, 3);
         echo time() . " Worker process, pid {$id}. run $rand s\n";
