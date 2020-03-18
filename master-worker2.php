@@ -80,7 +80,9 @@ class Worker
     public static function signalHandler($pid)
     {
 //        echo "收到子进程退出(pid:$pid)" . PHP_EOL;
-        $result = pcntl_waitpid($pid, $status, WNOHANG);
+//        $result = pcntl_waitpid($pid, $status, WNOHANG);
+        $pid = pcntl_wait( $status, WUNTRACED );
+
         static::runWorker();
     }
 
