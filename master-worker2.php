@@ -10,6 +10,8 @@ class Worker
         static::installHandler();
 
         static::runMaster();
+
+        static::monitor();
     }
 
     //开启主进程
@@ -33,11 +35,10 @@ class Worker
                     $i++;
                 }
 
-                while (1) {
-                    sleep(1);
-                    // 触发信号处理
-                    pcntl_signal_dispatch();
-                }
+//                while (1) {
+//                    sleep(1);
+//
+//                }
                 break;
             default:
                 exit("Parent process exit\n");
@@ -81,11 +82,26 @@ class Worker
     {
 //        echo "收到子进程退出(pid:$pid)" . PHP_EOL;
 //        $result = pcntl_waitpid($pid, $status, WNOHANG);
-        $pid = pcntl_wait( $status, WUNTRACED );
+//        $pid = pcntl_wait($status, WUNTRACED);
 
         static::runWorker();
     }
 
+    /**
+     * 主进程陷入monitor子进程循环中.
+     */
+    public static function monitor()
+    {
+        while (true) {
+            sleep(1);
+            // 触发信号处理
+            pcntl_signal_dispatch();
+            // 挂起父前进程直到子进程收到中断信号
+            $pid = pcntl_wait($status, WUNTRACED);
+            // 触发信号处理
+            pcntl_signal_dispatch();
+        }
+    }
 }
 
 Worker::runAll();
