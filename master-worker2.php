@@ -2,9 +2,32 @@
 
 class Worker
 {
+    /**
+     * 主进程pid
+     *
+     * @var int
+     */
+    public static $masterPid;
 
+    /**
+     * 保存主进程pid的文件
+     *
+     * @var string
+     */
+    public static $pidFile = "./server_master_pid.pid";
+
+    /**
+     * 开启的子进程数
+     *
+     * @var int
+     */
     public static $count = 2;
 
+    /**
+     * 启动程序
+     *
+     * @throws Exception
+     */
     public static function runAll()
     {
         static::installHandler();
@@ -24,11 +47,15 @@ class Worker
             case -1 :
                 exit("parent process fork fail\n");
             case 0:
+                // 脱离终端,实现守护进程
                 if (-1 === posix_setsid()) {
                     throw new Exception("could not detach from terminal\n");
                 }
-
+                // 为主进程起个名字
                 @cli_set_process_title("php: master process");
+                // 获取主进程pid
+                static::$masterPid = posix_getpid();
+                // fork出子进程
                 $i = 1;
                 while ($i < self::$count) {
                     static::runWorker();
