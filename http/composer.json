@@ -6,5 +6,17 @@
             "email": "1443261811@qq.com"
         }
     ],
-    "require": {}
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        },
+        "files": [
+            "src/Routes/web.php"
+        ],
+        "classmap": [
+            "src/Controllers",
+            "src/Models"
+        ]
+    }
 }
