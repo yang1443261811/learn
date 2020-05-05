@@ -100,11 +100,10 @@ class Router
                         $segments = explode('@', $last);
 
                         // Instanitate controller
-                        $controller = "App\\Controllers\\{$segments[0]}";
-                        $controller = new $controller;
+                        $controller = new $segments[0];
                         // Call method
                         $result = $controller->{$segments[1]}($request);
-                        $response->end($result);
+                        echo $result;
 
                         if (self::$halts) return;
                     } else {
@@ -166,11 +165,9 @@ class Router
         // Run the error callback if the route was not found
         if ($found_route == false) {
             if (!self::$error_callback) {
-                self::$error_callback = function () use ($request, $response) {
-                    $response->header($request->server['server_protocol'], " 404 Not Found");
+                self::$error_callback = function ($request, $response) {
+                    $response->status(404, " Not Found");
                     $response->end('404');
-//                    header($_SERVER['SERVER_PROTOCOL'] . " 404 Not Found");
-//                    echo '404';
                 };
             } else {
                 if (is_string(self::$error_callback)) {
@@ -180,7 +177,7 @@ class Router
                     return;
                 }
             }
-            call_user_func(self::$error_callback);
+            call_user_func(self::$error_callback, $request, $response);
         }
     }
 }
