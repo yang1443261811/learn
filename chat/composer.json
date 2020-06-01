@@ -1,0 +1,19 @@
+{
+    "name": "bl/chat",
+    "authors": [
+        {
+            "name": "yang1443261811",
+            "email": "1443261811@qq.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+        ],
+        "classmap": [
+        ]
+    }
+}

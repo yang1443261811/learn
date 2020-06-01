@@ -1,7 +1,5 @@
 <?php
-
 use \App\Lib\Router;
-
 // Autoload 自动载入
 require './vendor/autoload.php';
 
@@ -22,3 +20,6 @@ $http->on('request', function ($request, $response) {
 });
 
 $http->start();
+
+
+echo 'hello world';

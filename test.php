@@ -1,4 +1,6 @@
 <?php
+header('Content-Type:text/html;Charset=utf-8');
+
 function getRoleInfo()
 {
     $params['app_id'] = 'bmccfg';
@@ -30,6 +32,7 @@ function getRoleInfo()
     curl_close($ch);
     print_r($api);
 }
+
 //getRoleInfo();
 function getPay()
 {
@@ -59,4 +62,7 @@ function getPay()
     $content = json_decode($content, true);
 }
 getPay();
+
+
+
 

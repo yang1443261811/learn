@@ -1,10 +1,25 @@
 <?php
-$http = new Swoole\Http\Server("0.0.0.0", 8080);
 
-$http->on('request', function ($request, $response) {
-    var_dump($request->get, $request->post);
-    $response->header("Content-Type", "text/html; charset=utf-8");
-    $response->end("<h1>Hello Swoole. #".rand(1000, 9999)."</h1>");
+Co\run(function () {
+    $server = new Co\Http\Server("0.0.0.0", 9502, false);
+    $server->handle('/websocket', function ($request, $ws) {
+        $ws->upgrade();
+        while (true) {
+            $frame = $ws->recv();
+            if ($frame === false) {
+                echo "error : " . swoole_last_error() . "\n";
+                break;
+            } else if ($frame == '') {
+                break;
+            } else {
+                if ($frame->data == "close") {
+                    $ws->close();
+                    return;
+                }
+                $ws->push("Hello {$frame->data}!");
+                $ws->push("How are you, {$frame->data}?");
+            }
+        }
+    });
+    $server->start();
 });
-
-$http->start();
